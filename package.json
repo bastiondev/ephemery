@@ -1,0 +1,25 @@
+{
+  "name": "Ephemery",
+  "description": "A temporary, secure, and private text sharing utility",
+  "author": "Adam Wilson <adam@bastion.dev>",
+  "version": "0.1.0",
+  "main": "node/server.js",
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "lodash": "^4.17.21"
+  },
+  "scripts": {
+    "start": "node server/server.js",
+    "heroku-postbuild": "cd client && yarn && yarn run build",
+    "clean": "rm -rf client/build"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.13.0",
+    "@babel/core": "^7.13.8",
+    "@babel/preset-env": "^7.13.8"
+  }
+}
