@@ -10,16 +10,21 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "nanoid": "^3.1.21",
+    "redis": "^3.0.2",
+    "ws": "^7.4.4"
   },
   "scripts": {
     "start": "node server/server.js",
     "heroku-postbuild": "cd client && yarn && yarn run build",
-    "clean": "rm -rf client/build"
+    "clean": "rm -rf client/build",
+    "dev": "nodemon --ignore 'client/*' server/server.js"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.0",
     "@babel/core": "^7.13.8",
-    "@babel/preset-env": "^7.13.8"
+    "@babel/preset-env": "^7.13.8",
+    "nodemon": "^2.0.7"
   }
 }

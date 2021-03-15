@@ -1,20 +1,32 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route
+} from "react-router-dom";
+
+import { Home, NoMatch, Room } from './pages'
+import { Container } from './components'
 
 function App() {
 
-  const [text, setText] = useState('Unloaded')
-
-  useEffect(async () => {
-    const res = await fetch('/data')
-    setText(await res.text())
-  })
-
   return (
-    <div className="App">
-      <h1>App</h1>
-      <p>{text}</p>
-    </div>
-  )
+    <Container>
+      <Router>
+        <Switch>
+          <Route exact path="/">
+            <Home />
+          </Route>
+          <Route path="/room/:roomId">
+            <Room />
+          </Route>
+          <Route path="*">
+            <NoMatch />
+          </Route>
+        </Switch>
+      </Router>
+    </Container>
+  );
 }
 
-export default App
+export default App;
