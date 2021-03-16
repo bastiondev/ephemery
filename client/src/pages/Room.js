@@ -5,20 +5,24 @@ import { debounce } from 'lodash';
 const port = process.env['REACT_APP_WSS_PORT'] || window.location.port;
 const wssLocation = `ws://${window.location.hostname}:${port}/room-io`;
 
-const KEEPALIVE_INTERVAL = 1000 * 5;
+const KEEPALIVE_INTERVAL = 1000 * 30;
 
 const send = (wss, message) => {
   wss.send(JSON.stringify(message));
 }
 
-const hostKeepAlive = (wss, roomId, roomToken) => {
+const hostKeepAlive = (wss, roomId, body) => {
   console.log("running keepalive")
-  send(wss, { roomId, type: 'host-keepalive' });
+  send(wss, { roomId, type: 'host-keepalive', body });
 }
 
 const sendText = (wss, roomId, body) => {
   console.log(`Sending "${body}"`);
-  send(wss, { type: 'send-room', roomId, body });
+  send(wss, { roomId, type: 'send-room', body });
+}
+
+const connectGuest = (wss, roomId, body) => {
+  send(wss, { roomId, type: 'connect-guest', body });
 }
 
 export default function Room(props) {
@@ -35,39 +39,43 @@ export default function Room(props) {
 
   const debouncedSend = useCallback(
     debounce((text) => {
-      console.log("broadcast: " + text)
+      sendText(wss.current, roomId, text)
     }, 300),
     []
   )
 
-  // Host hooks
   useEffect(() => {
+    wss.current = new WebSocket(wssLocation);
+    const roomId = location.pathname.split('/')[2];
+    const passphrase = location.hash;
     if (isHost) {
-      wss.current = new WebSocket(wssLocation);
-      const roomId = location.pathname.split('/')[2];
-      const passphrase = location.hash;
       const roomToken = location.state?.roomToken;
       if (roomToken) {
+        wss.current.onopen = () => {
+          hostKeepAlive(wss.current, roomId, roomToken);
+        }
         const keepAlive = setInterval(() => hostKeepAlive(
           wss.current, roomId, roomToken
         ), KEEPALIVE_INTERVAL);
         return () => clearInterval(keepAlive);
+      }
+    } else {
+      console.log(wss.current)
+      wss.current.onopen = () => {
+        connectGuest(wss.current, roomId);
+      }
+      wss.current.onmessage = (message) => {
+        const {roomId, type, body} = JSON.parse(message.data);
+        if (type === 'broadcast') {
+          setText(body);
+        }
       }
     }
   }, []);
 
   useEffect(() => {
     if (isHost) debouncedSend(text);
-  }, [text])
-
-  // Reader Hooks
-  useEffect(() => {
-    if (!isHost) {
-      wss.on('message', message => {
-        const {roomId, type, body} = JSON.parse(message)
-      })
-    }
-  })
+  }, [text]);
 
   return (
     <div className="Room">
@@ -86,7 +94,7 @@ export default function Room(props) {
           <textarea className="form-control" 
             rows="4" 
             value={text}
-            readonly
+            readOnly={true}
           />
         </div>
       }

@@ -6,7 +6,7 @@ const createPassphrase = async () => {
 }
 
 const getRoom = async () => {
-  return (await post('/room')).data;
+  return (await post('/api/room')).data;
 }
 
 export default async function createRoom() {

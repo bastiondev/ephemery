@@ -17,21 +17,22 @@ const app = express();
 
 
 // Open Redis publisher and subscribers
+const publisher = redis.createClient({url: REDIS_HOST});
 const subscriber = redis.createClient({url: REDIS_HOST});
-const publisher = subscriber.duplicate();
 // Promisify Redis methods:
-const get = promisify(subscriber.get).bind(subscriber);
-const set = promisify(subscriber.set).bind(subscriber);
-const del = promisify(subscriber.del).bind(subscriber);
-const expire = promisify(subscriber.expire).bind(subscriber);
-const pub = promisify(publisher.del).bind(publisher);
+const get = promisify(publisher.get).bind(publisher);
+const set = promisify(publisher.set).bind(publisher);
+const del = promisify(publisher.del).bind(publisher);
+const expire = promisify(publisher.expire).bind(publisher);
+const publish = promisify(publisher.publish).bind(publisher);
+const psubscribe = promisify(subscriber.psubscribe).bind(subscriber);
 
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../client/build')));
 
 // Create room
-app.post('/room', async (req, res) => {
+app.post('/api/room', async (req, res) => {
   const roomId = nanoid(ROOM_LENGTH);
   const roomToken = nanoid(32);
   // Put room token with EXP
@@ -59,8 +60,8 @@ const addRoomSubscriber = (roomId, client) => {
   if (!roomSubscribers[roomId]) {
     roomSubscribers[roomId] = [];
   }
-  if (roomSubscribers.indexOf(client) < 0) {
-    roomSubscribers.push(client);
+  if (roomSubscribers[roomId].indexOf(client) < 0) {
+    roomSubscribers[roomId].push(client);
   }
 }
 
@@ -76,7 +77,7 @@ wss.on('connection', (ws) => {
   let isInvalid = false;
 
   ws.on('message', async (data) => {
-    console.log(data)
+    console.log(data, isHost);
 
     // Connection to room in invalid state
     if (isInvalid) {
@@ -88,28 +89,28 @@ wss.on('connection', (ws) => {
     const { type, roomId, body } = JSON.parse(data);
     const roomKey = `${CHANNEL_PREFIX}:${roomId}`;
     
-    // Open room channel if not already present (or recent)
-    if (type === 'connect-host') {
+    // Open room channel / keep alive if not already present (or recent)
+    if (type === 'host-keepalive') {
       const roomKey = await get(`${ROOM_TOKEN_PREFIX}:${roomId}`);
       if (roomKey === body) {
         isHost = true;
-        console.log('Host connected to room')
+        expire(`${ROOM_TOKEN_PREFIX}:${roomId}`, ROOM_TTL);
+        console.log(`Host keep alive for room ${roomId}`)
       } else {
         isInvalid = true;
         send(ws, "error", "invalid-room-key")
       }
 
-    // Keep room open in case of connection interrupt
-    } else if (isHost && type === 'host-keepalive') {
-      expire(`${ROOM_TOKEN_PREFIX}:${roomId}`, ROOM_TTL);
-      console.log(`Room ${roomId} host-keepalive`)
+    // Host send to room
+    } else if (isHost && type === 'send-room') {
+      await publish(`${CHANNEL_PREFIX}:${roomId}`, body)
+      console.log(`Broadcast: [${CHANNEL_PREFIX}:${roomId}] ${body}`)
 
-    // Enter a room an subscribe to messages
+    // Guest enter a room an subscribe to messages
     } else if (!isHost && type === 'connect-guest') {
+      console.log(`Guest connected to ${roomId}`)
       addRoomSubscriber(roomId, ws);
 
-    } else if (isHost && type === 'send-room') {
-      await pub(roomKey, body)
     }
 
   });
@@ -128,21 +129,20 @@ wss.on('connection', (ws) => {
 
 });
 
-subscriber.on("message", (channel, message) => {
-  console.log("message", channel, message);
-  if (channel.indexOf(CHANNEL_PREFIX) == 0) {
-    // wss.clients.forEach(client => {
-    //   if (client.readyState === WebSocket.OPEN) {
-    //     client.send(message);
-    //   }
-    // });
-  }
+psubscribe(`${CHANNEL_PREFIX}:*`)
+console.log(`psubscribed to [${CHANNEL_PREFIX}:*]`)
+subscriber.on("pmessage", (pattern, channel, message) => {
+  console.log("pmessage", channel, message);
+  const roomId = channel.slice(CHANNEL_PREFIX.length + 1);
+  console.log("looking for room subscribers for " + roomId);
+  roomSubscribers[roomId]?.forEach((roomSubscriber) => {
+    console.log(`broadcasting "${message}" to subscriber`)
+    send(roomSubscriber, 'broadcast', message);
+  })
+  // wss.clients.forEach(client => {
+  //   if (client.readyState === WebSocket.OPEN) {
+  //     client.send(message);
+  //   }
+  // });
 });
 
-
-
-// setInterval(() => {
-//   wss.clients.forEach((client) => {
-//     client.send(new Date().toTimeString());
-//   });
-// }, 1000);

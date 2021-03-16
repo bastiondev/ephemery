@@ -23,16 +23,7 @@ A quick, secure, and temporary channel to share secrets.  Create an ephemeral ro
 
 `POST /room` returns `{ roomId, roomToken }`
 
-Navigate to room page and open web socket with:
-```json
-{
-  "type": "connect-host",
-  "roomId": "roomId",
-  "body": "roomToken"
-}
-```
-
-Keep-alive for host (keeps roomToken in Redis, which expires after unuse) websocket:
+Keep-alive & opens for host (keeps roomToken in Redis, which expires after unuse) websocket:
 ```json
 {
   "type": "host-keepalive",

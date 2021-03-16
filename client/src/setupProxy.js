@@ -9,7 +9,7 @@ module.exports = function(app) {
     })
   );
   app.use(
-    createProxyMiddleware('/room', {
+    createProxyMiddleware('/api/room', {
       target: process.env.PROXY,
       changeOrigin: true,
     })
