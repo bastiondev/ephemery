@@ -12,4 +12,9 @@ if (!('error' in result)) {
   each(process.env, (value, key) => envs[key] = value)
 }
 
+// Copy REDIS_URL value
+if (envs['REDIS_URL']) {
+  envs['REDIS_URL'] = envs[envs['REDIS_URL']]
+}
+
 module.exports = envs

@@ -7,7 +7,7 @@ const parser = require('ua-parser-js');
 const path = require('path');
 const { nanoid } = require('nanoid');
 
-const { NODE_ENV, PORT, REDIS_HOST } = require('./config');
+const { NODE_ENV, PORT, REDIS_URL } = require('./config');
 
 const ROOM_LENGTH = 12;
 const ROOM_TTL = 600;
@@ -20,8 +20,9 @@ const app = express();
 
 
 // Open Redis publisher and subscribers
-const publisher = redis.createClient({url: REDIS_HOST});
-const subscriber = redis.createClient({url: REDIS_HOST});
+console.log("Using REDIS_URL", REDIS_URL)
+const publisher = redis.createClient({url: REDIS_URL});
+const subscriber = redis.createClient({url: REDIS_URL});
 // Promisify Redis methods:
 const get = promisify(publisher.get).bind(publisher);
 const set = promisify(publisher.set).bind(publisher);

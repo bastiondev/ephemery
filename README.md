@@ -29,7 +29,7 @@ A room consists of 2 elements in Redis:
 
 #### Host open a room:
 
-`POST /room` returns `{ roomId, roomToken }`
+`POST /api/room` returns `{ roomId, roomToken }`
 
 Keep-alive & opens for host (keeps roomToken in Redis, which expires after unuse) websocket:
 ```json
