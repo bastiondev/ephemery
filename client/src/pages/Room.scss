@@ -1,0 +1,13 @@
+.Room {
+  .RoomLink {
+    cursor: pointer;
+    .RoomCopyIcon {
+      visibility: hidden;
+    }
+    &:hover {
+      .RoomCopyIcon {
+        visibility: visible;
+      }
+    }
+  }
+}

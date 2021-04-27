@@ -1,7 +1,7 @@
 import { post } from 'axios';
 
 const createPassphrase = async () => {
-  const bytes = window.crypto.getRandomValues(new Uint8Array(26))
+  const bytes = window.crypto.getRandomValues(new Uint8Array(16))
   return btoa(String.fromCharCode(...bytes));
 }
 

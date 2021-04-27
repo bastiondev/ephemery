@@ -17,6 +17,14 @@ A quick, secure, and temporary channel to share secrets.  Create an ephemeral ro
 3. Visit `localhost:3001` in your browser
 
 
+### Redis data structure
+
+A room consists of 2 elements in Redis:
+
+1. `eph:room:room-token` STRING A room token issued to the room opener to keep room open.  Expires in 120 seconds without a `keep-alive` message.
+2. `eph:room:${roomId}` CHANNEL A pub sub channel for sending messages to the host and guests of a room.
+
+
 ### API design
 
 #### Host open a room:
@@ -44,16 +52,28 @@ Broadcast content:
 }
 ```
 
+#### Room closed (closed by host or expired)
+
+```json
+
+{
+  "type": "close-room",
+  "roomId": "roomId"
+}
+
+```
+
 
 #### Host receive guest attendance
 
-Guest joined, will re-broadcast room content:
+Guest joined and/or keep alive, will re-broadcast room content:
 ```json
 {
-  "type": "guest-join",
+  "type": "guest-keepalive",
   "roomId": "roomId",
   "body": {
     "guestId": "Unique guest ID",
+    "os": "Operating System",
     "browser": "Browser Name",
     "location": "Location description",
     "ip": "IP Address"

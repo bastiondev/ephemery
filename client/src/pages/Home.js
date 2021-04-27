@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useHistory } from "react-router-dom";
 
-import { createRoom, encryptText, decryptText } from '../services';
+import { createRoom } from '../services';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
@@ -27,7 +27,7 @@ export default function Home() {
       // const decryptedText = await decryptText(passphrase, encryptedText);
       // console.log(decryptedText);
       history.push({ 
-        pathname: `/room/${room.roomId}`, 
+        pathname: `/r/${room.roomId}`, 
         hash: passphrase, 
         state: {roomToken: room.roomToken}
       });
@@ -40,8 +40,7 @@ export default function Home() {
 
   return (
     <div className="Home text-center">
-      <h1 className="display-3">Ephemery</h1>
-      <p className="lead mt-5">
+      <p className="lead">
         A quick, secure, and temporary channel to share secrets.  Create an ephemeral room and send the link.  Your browser is the host and the person with the link can see what you enter only while your browser keeps the room open.
       </p>
       <div className="my-5">
@@ -70,7 +69,7 @@ export default function Home() {
             <br/>
             <strong className="font-monospace pe-2">secret-key</strong> Key to decrypt the text in recipient's browser
           </p>
-          <p>Ephemery acts as a tunnel for the encrypted secret text to get the recipient.  The key after the <strong className="font-monospace">#</strong> is never sent to the server so only the person with the link can view the data, not even the Ephemery server!</p>
+          <p>Ephemery acts as a tunnel for the encrypted secret text to get the recipient.  The key after the <strong className="font-monospace">#</strong> is never sent to the server so only the person with the link can decrypt the data, not even the Ephemery server!</p>
           <p>Your browser hosts the room and the data.  Close the browser window and the room disappears forever!</p>
           <p>See the source on <a href="https://github.com/bastiondev/ephemery">Github</a></p>
         </div>

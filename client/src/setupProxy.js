@@ -6,6 +6,7 @@ module.exports = function(app) {
       target: process.env.PROXY,
       changeOrigin: true,
       ws: true,
+      logLevel: 'debug'
     })
   );
   app.use(

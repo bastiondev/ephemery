@@ -2,6 +2,7 @@ const express = require('express');
 const redis = require("redis");
 const { Server } = require('ws');
 const { promisify } = require("util");
+const parser = require('ua-parser-js');
 
 const path = require('path');
 const { nanoid } = require('nanoid');
@@ -9,9 +10,11 @@ const { nanoid } = require('nanoid');
 const { NODE_ENV, PORT, REDIS_HOST } = require('./config');
 
 const ROOM_LENGTH = 12;
-const ROOM_TTL = 120;
+const ROOM_TTL = 600;
+const ROOM_CLEANING_INTERVAL = 5 * 60 * 1000;
 const CHANNEL_PREFIX = "eph:room";
 const ROOM_TOKEN_PREFIX = `${CHANNEL_PREFIX}:room-token`;
+const ROOM_GUESTS_PREFIX = `${CHANNEL_PREFIX}:room-guests`;
 
 const app = express();
 
@@ -27,7 +30,6 @@ const expire = promisify(publisher.expire).bind(publisher);
 const publish = promisify(publisher.publish).bind(publisher);
 const psubscribe = promisify(subscriber.psubscribe).bind(subscriber);
 
-
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../client/build')));
 
@@ -38,78 +40,89 @@ app.post('/api/room', async (req, res) => {
   // Put room token with EXP
   await set(`${ROOM_TOKEN_PREFIX}:${roomId}`, roomToken, 'EX', ROOM_TTL);
   res.json({ roomId, roomToken });
+  console.log(`Created room ${roomId}`)
+});
+
+// Serve react app on room
+app.get('/r/*', (req, res) => {
+  res.sendFile(path.join(__dirname + '/../client/build/index.html'));
 });
 
 const server = app.listen(PORT);
 console.log(`Express istening on port ${PORT} in ${NODE_ENV}`);
 
-
 // Start web socket server
 const wss = new Server({ server, path: "/room-io" });
-
-// Room subscribers
-// roomId => [ws]
-let roomSubscribers = {}
 
 // Send formatted message to client
 const send = (ws, type, body) => {
   ws.send(JSON.stringify({type, body}));
 }
 
-const addRoomSubscriber = (roomId, client) => {
-  if (!roomSubscribers[roomId]) {
-    roomSubscribers[roomId] = [];
-  }
-  if (roomSubscribers[roomId].indexOf(client) < 0) {
-    roomSubscribers[roomId].push(client);
-  }
+// Close room
+const closeRoom = async (roomId) => {
+  await publish(
+    `${CHANNEL_PREFIX}:${roomId}`, 
+    JSON.stringify({type: 'close-room'})
+  );
+  await del(`${ROOM_TOKEN_PREFIX}:${roomId}`);
 }
 
-const removeRoomSubscriber = (roomId, client) => {
-  const i = roomSubscribers.indexOf(client);
-  if (i > -1) {
-    roomSubscribers = roomSubscribers.splice(i, 1)
-  }
-}
-
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   let isHost = false;
   let isInvalid = false;
+  let connectionRoomId = null;
+
+  // Get browser details:
+  const ua = parser(req.headers['user-agent']);
+
+  // Create unique id
+  const uid = nanoid(32);
 
   ws.on('message', async (data) => {
-    console.log(data, isHost);
-
-    // Connection to room in invalid state
-    if (isInvalid) {
-      send(ws, "error", "invalid");
-      return;
-    }
 
     // Parse message data
     const { type, roomId, body } = JSON.parse(data);
     const roomKey = `${CHANNEL_PREFIX}:${roomId}`;
+
+    // Get token for room (null if room is closed)
+    const roomToken = await get(`${ROOM_TOKEN_PREFIX}:${roomId}`);
+
+    // Store roomId on WSS client
+    ws.roomId = roomId;
     
     // Open room channel / keep alive if not already present (or recent)
     if (type === 'host-keepalive') {
-      const roomKey = await get(`${ROOM_TOKEN_PREFIX}:${roomId}`);
-      if (roomKey === body) {
+      if (roomToken === body) {
         isHost = true;
         expire(`${ROOM_TOKEN_PREFIX}:${roomId}`, ROOM_TTL);
         console.log(`Host keep alive for room ${roomId}`)
       } else {
-        isInvalid = true;
+        console.log(`Invalid host keep alive for room ${roomId}`)
         send(ws, "error", "invalid-room-key")
       }
 
     // Host send to room
-    } else if (isHost && type === 'send-room') {
-      await publish(`${CHANNEL_PREFIX}:${roomId}`, body)
-      console.log(`Broadcast: [${CHANNEL_PREFIX}:${roomId}] ${body}`)
+    } else if (isHost && roomToken && type === 'send-room') {
+      await publish(roomKey, JSON.stringify({type, body}))
+
+    // Host closes room
+    } else if (isHost && roomToken && type === 'close-room') {
+      await publish(roomKey, JSON.stringify({type: 'close-room'}));
+      await closeRoom(ws.roomId);
 
     // Guest enter a room an subscribe to messages
-    } else if (!isHost && type === 'connect-guest') {
-      console.log(`Guest connected to ${roomId}`)
-      addRoomSubscriber(roomId, ws);
+    } else if (!isHost && roomToken && type === 'guest-keepalive') {
+      await publish(roomKey, JSON.stringify({type, body: {
+        guestId: uid,
+        browser: ua['browser']['name'],
+        os: ua['os']['name'],
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
+      }}))
+
+    // Room is closed if no room token
+    } else if (!roomToken) {
+      await publish(roomKey, JSON.stringify({type: 'close-room'}))
 
     }
 
@@ -118,13 +131,21 @@ wss.on('connection', (ws) => {
   // Close connection:
   //  Close room if host
   //  Remove subscriber entry if other
-  ws.on('close', async () => {
-    if (isHost) {
-      await del(roomKey)
+  ws.on('close', async (code, reason) => {
+    if (ws.roomId) {
+      const roomKey = `${CHANNEL_PREFIX}:${ws.roomId}`;
+      if (isHost) {
+        // Do nothing, shorten TTL?
+      } else {
+        await publish(roomKey, JSON.stringify({
+          type: 'guest-disconnect', 
+          body: { guestId: uid }
+        }));
+        console.log(`guest-disconnect from ${ws.roomId}`)
+      }
     } else {
-      removeRoomSubscriber(roomId, ws);
+      console.log("Closed connection without roomId")
     }
-    console.log('Client disconnected')
   });
 
 });
@@ -132,17 +153,14 @@ wss.on('connection', (ws) => {
 psubscribe(`${CHANNEL_PREFIX}:*`)
 console.log(`psubscribed to [${CHANNEL_PREFIX}:*]`)
 subscriber.on("pmessage", (pattern, channel, message) => {
-  console.log("pmessage", channel, message);
+  const { type, body } = JSON.parse(message);
+  console.log("pmessage", channel, type);
   const roomId = channel.slice(CHANNEL_PREFIX.length + 1);
-  console.log("looking for room subscribers for " + roomId);
-  roomSubscribers[roomId]?.forEach((roomSubscriber) => {
-    console.log(`broadcasting "${message}" to subscriber`)
-    send(roomSubscriber, 'broadcast', message);
-  })
-  // wss.clients.forEach(client => {
-  //   if (client.readyState === WebSocket.OPEN) {
-  //     client.send(message);
-  //   }
-  // });
+  wss.clients.forEach((client) => {
+    if (client.roomId == roomId) {
+      send(client, type, body);
+    }
+  });
+
 });
 
