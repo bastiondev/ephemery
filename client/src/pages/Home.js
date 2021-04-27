@@ -18,14 +18,7 @@ export default function Home() {
     setRoomError(false);
     try {
       const { passphrase, room } = await createRoom();
-      // await new Promise(r => setTimeout(r, 1000));
       setOpeningRoom(false);
-      console.log(room);
-      // const secretText = "This is secret text";
-      // const encryptedText = await encryptText(passphrase, secretText);
-      // console.log(encryptedText);
-      // const decryptedText = await decryptText(passphrase, encryptedText);
-      // console.log(decryptedText);
       history.push({ 
         pathname: `/r/${room.roomId}`, 
         hash: passphrase, 
