@@ -93,28 +93,6 @@ Guest disconnected:
 ```
 
 
-#### Guest join room
-
-Register to receive room messages, sends:
-```json
-{
-  "type": "connect-guest",
-  "roomId": "roomId",
-  "body": ""
-}
-```
-
-Receive broadcast content:
-```json
-{
-  "type": "broadcast",
-  "roomId": "roomId",
-  "body": "encryptedRoomContent"
-}
-```
-
-
-
 
 
 
