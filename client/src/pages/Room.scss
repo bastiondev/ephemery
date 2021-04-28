@@ -1,13 +1,27 @@
+@import "../../node_modules/bootstrap/scss/bootstrap.scss";
+
 .Room {
   .RoomLink {
     cursor: pointer;
-    .RoomCopyIcon {
-      visibility: hidden;
+    .RoomLinkCopy {
+      font-size: 70%;
+      white-space: nowrap;
     }
-    &:hover {
-      .RoomCopyIcon {
-        visibility: visible;
+    @include media-breakpoint-up(md) {
+      .RoomLinkCopy {
+        font-size: 100%;
       }
+    }
+  }
+  .RoomLinkCopied {
+    &.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    &.hidden {
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0s 1s, opacity 1s linear;
     }
   }
 }

@@ -35,6 +35,7 @@ export default function Room(props) {
   const [ text, setText ] = useState('');
   const [ isOverTextSize, setIsOverTextSize ] = useState(false);
   const [ isClosed, setIsClosed ] = useState(false);
+  const [ showCopied, setShowCopied ] = useState(false);
   const [ error, setError ] = useState(null);
   const [ isDisconnected, setIsDisconnected ] = useState(false);
   const [ guests, setGuests ] = useState([]);
@@ -72,6 +73,7 @@ export default function Room(props) {
     range.selectNode(copyLinkRef.current);
     window.getSelection().addRange(range);
     document.execCommand('copy');
+    setShowCopied(true);
   }
 
   // Set up the WSS connection and keepalive
@@ -117,6 +119,11 @@ export default function Room(props) {
     }
   }, [text]);
 
+  // Hide showCopied after delay
+  useEffect(() => {
+    "effect showCopied"
+    setTimeout(() => setShowCopied(false), 3 * 1000);
+  }, [showCopied])
 
 
   // 
@@ -125,7 +132,6 @@ export default function Room(props) {
   const hostHandler = (wss) => {
 
     wss.onmessage = async (message) => {
-      console.log('Message:', message.data);
       const {type, body} = JSON.parse(message.data);
 
       if (type === 'error') {
@@ -153,7 +159,6 @@ export default function Room(props) {
     }
 
     wss.onclose = async (event) => {
-      console.log("onclose", event);
       setTimeout(() => {
         if (wss.current && wss.current.readyState !== 1) setIsDisconnected(true)
       }, 1000);
@@ -168,7 +173,6 @@ export default function Room(props) {
     // Respond to broadcast
     wss.onmessage = async (message) => {
       const {type, body} = JSON.parse(message.data);
-      console.log("Got message", type, body)
       if (type === 'send-room') {
         setIsClosed(false);
         setText(await decryptText(passphrase, body));
@@ -183,7 +187,6 @@ export default function Room(props) {
     }
 
     wss.onclose = async (event) => {
-      console.log("onclose", event);
       setTimeout(() => {
         if (wss.current && wss.current.readyState !== 1) setIsDisconnected(true)
       }, 1000);
@@ -200,15 +203,21 @@ export default function Room(props) {
       {isHost &&
         <div className="RoomContents p-4">
           <div className="text-center">
-            <div className="RoomLink overflow-auto border rounded-1 bg-body " style={{maxWidth: '100%'}}>
-              <div ref={copyLinkRef} 
+            <div className="RoomLink overflow-auto border rounded-1 bg-body  d-inline-block" style={{maxWidth: '100%'}}>
+              <span ref={copyLinkRef} 
                   onClick={copyLink}
-                  className="mx-auto fs-md-5 px-6 py-3 d-inline-block">
+                  className="RoomLinkCopy mx-auto fs-md-5 px-4 py-3 d-inline-block">
+                <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-2" />
                 https://{window.location.hostname}/r/{roomId}{passphrase}
-              <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-3" />
-              </div>
+              </span>
             </div>
-            <p><small>Send this link to share this room</small></p>
+            <p>
+              <small>Send this link to share this room</small>
+              <br/>
+              <span className={`RoomLinkCopied ${showCopied ? 'visible' : 'hidden'}`}>
+                Copied!
+              </span>
+            </p>
           </div>
            <div>
             <div>

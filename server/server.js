@@ -97,7 +97,6 @@ wss.on('connection', (ws, req) => {
       if (roomToken === body) {
         isHost = true;
         expire(`${ROOM_TOKEN_PREFIX}:${roomId}`, ROOM_TTL);
-        console.log(`Host keep alive for room ${roomId}`)
       } else {
         console.log(`Invalid host keep alive for room ${roomId}`)
         send(ws, "error", "invalid-room-key")
@@ -164,4 +163,10 @@ subscriber.on("pmessage", (pattern, channel, message) => {
   });
 
 });
+
+setInterval(() => {
+  if (wss.clients.size > 0) {
+    console.log(`clients.size = ${wss.clients.size}`)
+  }
+}, 60 * 1000);
 
