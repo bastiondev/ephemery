@@ -4,7 +4,8 @@ import { faGithub } from '@fortawesome/free-brands-svg-icons'
 
 export default function Container(props) {
   return (
-    <div className="container pt-lg-6 pt-4 d-flex flex-column h-100">
+    <div style={{maxWidth: '1000px'}} 
+        className="container pt-lg-6 pt-4 d-flex flex-column h-100">
       <h1 className="display-3 text-center mb-5">Ephemery</h1>
       <div className="flex-shrink-0">
         {props.children}
