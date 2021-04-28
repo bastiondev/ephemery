@@ -31,6 +31,17 @@ const expire = promisify(publisher.expire).bind(publisher);
 const publish = promisify(publisher.publish).bind(publisher);
 const psubscribe = promisify(subscriber.psubscribe).bind(subscriber);
 
+// Force SSL in non-development on Heroku
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== 'development') {
+    if (req.headers['x-forwarded-proto'] !== 'https')
+      return res.redirect('https://' + req.headers.host + req.url);
+    else
+      return next();
+  } else
+    return next();
+});
+
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../client/build')));
 
