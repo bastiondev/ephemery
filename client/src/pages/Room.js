@@ -9,8 +9,10 @@ import { faCopy, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 import './Room.scss';
 
+const proto = process.env['REACT_APP_ENVIRONMENT'] === 'development' ?
+  'ws' : 'wss';
 const port = process.env['REACT_APP_WSS_PORT'] || window.location.port;
-const wssLocation = `ws://${window.location.hostname}:${port}/room-io`;
+const wssLocation = `${proto}://${window.location.hostname}:${port}/room-io`;
 
 const KEEPALIVE_INTERVAL = 1000 * 10;
 const MAX_TEXT_SIZE = 1000;
