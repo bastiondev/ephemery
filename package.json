@@ -18,7 +18,7 @@
   },
   "scripts": {
     "start": "node server/server.js",
-    "heroku-postbuild": "cd client && yarn && yarn run build",
+    "heroku-postbuild": "cd client && yarn && yarn run build && find ./build -type f -name '*.css' -o -name '*.js' -exec gzip -k '{}' \\;",
     "clean": "rm -rf client/build",
     "dev": "nodemon --ignore 'client/*' server/server.js"
   },
