@@ -39,13 +39,14 @@ export async function encryptText(passphrase, text) {
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const passwordKey = await getPasswordKey(passphrase);
   const aesKey = await deriveKey(passwordKey, salt, ["encrypt"]);
+  const textToEncrypt = text.length === 0 ? ' ' : text
   const encryptedContent = await window.crypto.subtle.encrypt(
     {
       name: "AES-GCM",
       iv: iv,
     },
     aesKey,
-    new TextEncoder().encode(text)
+    new TextEncoder().encode(textToEncrypt)
   );
   const encryptedContentArr = new Uint8Array(encryptedContent);
   let buff = new Uint8Array(
