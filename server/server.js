@@ -1,4 +1,5 @@
 const express = require('express');
+const expressStaticGzip = require("express-static-gzip");
 const redis = require("redis");
 const { Server } = require('ws');
 const { promisify } = require("util");
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../client/build')));
+app.use(expressStaticGzip(path.join(__dirname, '../client/build')));
 
 // Create room
 app.post('/api/room', async (req, res) => {

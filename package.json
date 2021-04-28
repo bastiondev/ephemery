@@ -10,6 +10,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "express-static-gzip": "^2.1.1",
     "lodash": "^4.17.21",
     "nanoid": "^3.1.21",
     "redis": "^3.1.1",
@@ -18,7 +19,7 @@
   },
   "scripts": {
     "start": "node server/server.js",
-    "heroku-postbuild": "cd client && yarn && yarn run build && find ./build -type f -name '*.css' -o -name '*.js' -exec gzip -k '{}' \\;",
+    "heroku-postbuild": "cd client && yarn && yarn run build && find ./build -type f -name '*.js' -exec gzip -k '{}' \\;  && find ./build -type f -name '*.css' -exec gzip -k '{}' \\;",
     "clean": "rm -rf client/build",
     "dev": "nodemon --ignore 'client/*' server/server.js"
   },
