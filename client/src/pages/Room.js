@@ -208,7 +208,9 @@ export default function Room(props) {
                   onClick={copyLink}
                   className="RoomLinkCopy mx-auto fs-md-5 px-4 py-3 d-inline-block">
                 <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-2" />
-                https://{window.location.hostname}/r/{roomId}{passphrase}
+                <span ref={copyLinkRef}>
+                  https://{window.location.hostname}/r/{roomId}{passphrase}
+                </span>
               </span>
             </div>
             <p>
