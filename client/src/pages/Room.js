@@ -78,10 +78,11 @@ export default function Room(props) {
     setShowLinkCopied(true);
   }
 
+  // Copy guest contents from disabled text area
+  // Need to briefly enable to copy
   const copyGuestContents = (event) => {
     var range = document.createRange();
-    range.selectNode(guestContentsRef.current);
-    window.getSelection().addRange(range);
+    guestContentsRef.current.select();
     document.execCommand('copy');
     setShowContentsCopied(true);
   }
