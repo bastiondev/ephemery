@@ -18,8 +18,34 @@ $spacers: map-merge(
   $spacers
 );
 
-@import "../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap";
 
 html, body, #root {
   height: 100% !important;
+}
+
+.Room {
+  .RoomLink {
+    cursor: pointer;
+    .RoomLinkCopy {
+      font-size: 70%;
+      white-space: nowrap;
+    }
+    @include media-breakpoint-up(md) {
+      .RoomLinkCopy {
+        font-size: 100%;
+      }
+    }
+  }
+  .copied {
+    &.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+    &.hidden {
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0s 1s, opacity 1s linear;
+    }
+  }
 }

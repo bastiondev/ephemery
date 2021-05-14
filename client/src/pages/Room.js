@@ -2,12 +2,11 @@ import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { debounce, filter, find } from 'lodash';
 
+import { GuestCard } from '../components';
 import { encryptText, decryptText } from '../services';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faTimes } from '@fortawesome/free-solid-svg-icons';
-
-import './Room.scss';
 
 const proto = process.env['REACT_APP_ENVIRONMENT'] === 'development' ?
   'ws' : 'wss';
@@ -260,19 +259,9 @@ export default function Room(props) {
             </div>
             <div className="guests">
               <h4>Currently in the room:</h4>
-              <div className="row row-cols-1 row-cols-md-3 g-4">
-                {guests.map((guest) =>
-                  <div className="col" key={guest.guestId}>
-                    <div className="card">
-                      <div className="card-body">
-                        <p className="card-text">
-                          Browser: <strong>{guest.browser}</strong><br/>
-                          OS: <strong>{guest.os}</strong><br/>
-                          IP Address: <strong>{guest.ip}</strong>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              <div className="row row-cols-1 row-cols-md-2 g-4">
+                {guests.map((guest) => 
+                  <GuestCard guest={guest} key={guest.guestId} /> 
                 )}
                 {guests.length === 0 && 
                   <p>No guests</p>
