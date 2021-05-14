@@ -239,7 +239,7 @@ export default function Room(props) {
             </div>
              <div>
               <div>
-                <textarea className="form-control" 
+                <textarea className="form-control font-monospace" 
                   rows="5" 
                   onChange={(e) => {
                     if (e.target.value.length <= MAX_TEXT_SIZE) {
@@ -285,7 +285,7 @@ export default function Room(props) {
           <div className="RoomContents p-4">
             {!isClosed &&
               <div className="my-3">
-                <textarea className="form-control bg-white" 
+                <textarea className="form-control font-monospace bg-white" 
                   ref={guestContentsRef}
                   rows="5" 
                   value={text}
