@@ -35,13 +35,15 @@ export default function Room(props) {
   const [ text, setText ] = useState('');
   const [ isOverTextSize, setIsOverTextSize ] = useState(false);
   const [ isClosed, setIsClosed ] = useState(false);
-  const [ showCopied, setShowCopied ] = useState(false);
+  const [ showLinkCopied, setShowLinkCopied ] = useState(false);
+  const [ showContentsCopied, setShowContentsCopied ] = useState(false);
   const [ error, setError ] = useState(null);
   const [ isDisconnected, setIsDisconnected ] = useState(false);
   const [ guests, setGuests ] = useState([]);
 
   const wss = useRef(null);
   const copyLinkRef = useRef(null);
+  const guestContentsRef = useRef(null);
 
   // Close room
   const closeRoom = () => {
@@ -73,7 +75,15 @@ export default function Room(props) {
     range.selectNode(copyLinkRef.current);
     window.getSelection().addRange(range);
     document.execCommand('copy');
-    setShowCopied(true);
+    setShowLinkCopied(true);
+  }
+
+  const copyGuestContents = (event) => {
+    var range = document.createRange();
+    range.selectNode(guestContentsRef.current);
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    setShowContentsCopied(true);
   }
 
   // Set up the WSS connection and keepalive
@@ -121,9 +131,13 @@ export default function Room(props) {
 
   // Hide showCopied after delay
   useEffect(() => {
-    "effect showCopied"
-    setTimeout(() => setShowCopied(false), 3 * 1000);
-  }, [showCopied])
+    "effect showLinkCopied"
+    setTimeout(() => setShowLinkCopied(false), 3 * 1000);
+  }, [showLinkCopied])
+  useEffect(() => {
+    "effect showContentsCopied"
+    setTimeout(() => setShowContentsCopied(false), 3 * 1000);
+  }, [showContentsCopied])
 
 
   // 
@@ -195,112 +209,128 @@ export default function Room(props) {
   }
 
   return (
-    <div className="Room bg-light text-dark border border-2 p-3">
-      <Link className="btn btn-secondary btn-sm" to="/" onClick={closeRoom}>
-        <FontAwesomeIcon icon={faTimes} className="me-2" />
-        {isHost ? 'Close Room' : 'Leave Room'}
-      </Link>
-      {isHost &&
-        <div className="RoomContents p-4">
-          <div className="text-center">
-            <div className="RoomLink overflow-auto border rounded-1 bg-body  d-inline-block" style={{maxWidth: '100%'}}>
-              <span ref={copyLinkRef} 
-                  onClick={copyLink}
-                  className="RoomLinkCopy mx-auto fs-md-5 px-4 py-3 d-inline-block">
-                <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-2" />
-                <span ref={copyLinkRef}>
-                  https://{window.location.hostname}/r/{roomId}{passphrase}
+    <div className="RommContainer">
+      <div className="Room bg-light text-dark border border-2 p-3">
+        <Link className="btn btn-secondary btn-sm" to="/" onClick={closeRoom}>
+          <FontAwesomeIcon icon={faTimes} className="me-2" />
+          {isHost ? 'Close Room' : 'Leave Room'}
+        </Link>
+        {isHost &&
+          <div className="RoomContents p-4">
+            <div className="text-center">
+              <div className="RoomLink overflow-auto border rounded-1 bg-body  d-inline-block" style={{maxWidth: '100%'}}>
+                <span ref={copyLinkRef} 
+                    onClick={copyLink}
+                    className="RoomLinkCopy mx-auto fs-md-5 px-4 py-3 d-inline-block">
+                  <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-2" />
+                  <span ref={copyLinkRef}>
+                    https://{window.location.hostname}/r/{roomId}{passphrase}
+                  </span>
                 </span>
-              </span>
+              </div>
+              <p>
+                <small>Send this link to share this room</small>
+                <br/>
+                <span className={`RoomLinkCopied copied ${showLinkCopied ? 'visible' : 'hidden'}`}>
+                  Copied!
+                </span>
+              </p>
             </div>
-            <p>
-              <small>Send this link to share this room</small>
-              <br/>
-              <span className={`RoomLinkCopied ${showCopied ? 'visible' : 'hidden'}`}>
-                Copied!
-              </span>
-            </p>
-          </div>
-           <div>
-            <div>
-              <textarea className="form-control" 
-                rows="5" 
-                onChange={(e) => {
-                  if (e.target.value.length <= MAX_TEXT_SIZE) {
-                    setText(e.target.value);
-                    setIsOverTextSize(false);
-                  } else {
-                    setIsOverTextSize(true);
-                  }
-                }}
-                value={text}
-              />
+             <div>
+              <div>
+                <textarea className="form-control" 
+                  rows="5" 
+                  onChange={(e) => {
+                    if (e.target.value.length <= MAX_TEXT_SIZE) {
+                      setText(e.target.value);
+                      setIsOverTextSize(false);
+                    } else {
+                      setIsOverTextSize(true);
+                    }
+                  }}
+                  value={text}
+                />
+              </div>
+              <p className="text-end">
+                <small className={isOverTextSize ? 'text-danger fw-bold' : ''}>
+                  {MAX_TEXT_SIZE - text.length} characters left
+                </small>
+              </p>
             </div>
-            <p className="text-end">
-              <small className={isOverTextSize ? 'text-danger fw-bold' : ''}>
-                {MAX_TEXT_SIZE - text.length} characters left
-              </small>
-            </p>
-          </div>
-          <div className="guests">
-            <h4>Currently in the room:</h4>
-            <div className="row row-cols-1 row-cols-md-3 g-4">
-              {guests.map((guest) =>
-                <div className="col" key={guest.guestId}>
-                  <div className="card">
-                    <div className="card-body">
-                      <p className="card-text">
-                        Browser: <strong>{guest.browser}</strong><br/>
-                        OS: <strong>{guest.os}</strong><br/>
-                        IP Address: <strong>{guest.ip}</strong>
-                      </p>
+            <div className="guests">
+              <h4>Currently in the room:</h4>
+              <div className="row row-cols-1 row-cols-md-3 g-4">
+                {guests.map((guest) =>
+                  <div className="col" key={guest.guestId}>
+                    <div className="card">
+                      <div className="card-body">
+                        <p className="card-text">
+                          Browser: <strong>{guest.browser}</strong><br/>
+                          OS: <strong>{guest.os}</strong><br/>
+                          IP Address: <strong>{guest.ip}</strong>
+                        </p>
+                      </div>
                     </div>
                   </div>
+                )}
+                {guests.length === 0 && 
+                  <p>No guests</p>
+                }
+              </div>
+            </div>
+          </div>
+        }
+        {!isHost &&
+          <div className="RoomContents p-4">
+            {!isClosed &&
+              <div className="my-3">
+                <textarea className="form-control bg-white" 
+                  ref={guestContentsRef}
+                  rows="5" 
+                  value={text}
+                  readOnly={true}
+                />
+                <div className="text-center my-3">
+                  <button className="btn btn-sm btn-outline-primary"
+                    onClick={copyGuestContents}
+                  >
+                    <FontAwesomeIcon icon={faCopy} className="mx-2" />
+                    Copy room contents
+                  </button>
+                  <br/>
+                  <div className={`ContentsCopied copied pt-1 ${showContentsCopied ? 'visible' : 'hidden'}`}>
+                    Copied!
+                  </div>
                 </div>
-              )}
-              {guests.length === 0 && 
-                <p>No guests</p>
-              }
+              </div>
+            }
+            {isClosed &&
+              <div className="Closed text-center">
+                <span className="fs-5 border rounded-1 bg-body p-4 mt-3 mb-5 d-inline-block">The host has closed this room.</span>
+              </div>
+            }
+            <div className="Help text-center">
+              <h3>What is this?</h3>
+              <p>Someone has opened this Ephemeral room to share this secret with you.  The text will only be available while they have the room open.  Make sure you grab what you need from them!</p>
+              <p className="mb-0">For more info, see <a href="https://www.ephemery.app">ephemery.app</a>.</p>
             </div>
           </div>
-        </div>
-      }
-      {!isHost &&
-        <div className="RoomContents p-4">
-          <div className="text-center">
-            <div>Ephemeral Room</div>
-            <p className="fs-3">{roomId}</p>
+        }
+        {error && 
+          <div className="alert alert-danger" role="alert">
+            {error}
           </div>
-          {!isClosed &&
-            <div className="my-5">
-              <textarea className="form-control bg-white" 
-                rows="5" 
-                value={text}
-                readOnly={true}
-              />
-            </div>
-          }
-          {isClosed &&
-            <div className="Closed text-center">
-              <span className="fs-5 border rounded-1 bg-body p-4 mt-3 mb-5 d-inline-block">The host has closed this room.</span>
-            </div>
-          }
-          <div className="Help text-center">
-            <h3>What is this?</h3>
-            <p>Someone has opened this Ephemeral room to share this secret with you.  The text will only be available while they have the room open.  Make sure you grab what you need from them!</p>
-            <p>For more info, see <a href="https://www.ephemery.app">ephemery.app</a>.</p>
+        }
+        {isDisconnected &&
+          <div className="alert alert-warning" role="alert">
+            Unable to connect to Ephemery server.  Trying to reconnect...
           </div>
-        </div>
-      }
-      {error && 
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
-      }
-      {isDisconnected &&
-        <div className="alert alert-warning" role="alert">
-          Unable to connect to Ephemery server.  Trying to reconnect...
-        </div>
+        }
+      </div>
+      {!isHost && !isClosed &&
+        <p className="text-center my-1">
+          <small>Ephemeral Room ID <strong>{roomId}</strong></small>
+        </p>
       }
     </div>
   )

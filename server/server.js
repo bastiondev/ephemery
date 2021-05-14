@@ -163,10 +163,8 @@ wss.on('connection', (ws, req) => {
 });
 
 psubscribe(`${CHANNEL_PREFIX}:*`)
-console.log(`psubscribed to [${CHANNEL_PREFIX}:*]`)
 subscriber.on("pmessage", (pattern, channel, message) => {
   const { type, body } = JSON.parse(message);
-  console.log("pmessage", channel, type);
   const roomId = channel.slice(CHANNEL_PREFIX.length + 1);
   wss.clients.forEach((client) => {
     if (client.roomId == roomId) {
