@@ -1,7 +1,7 @@
 const dotenv = require('dotenv')
 const { each } = require('lodash')
 
-const result = dotenv.config()
+const result = dotenv.config();
 
 let envs
 
@@ -13,8 +13,8 @@ if (!('error' in result)) {
 }
 
 // Copy REDIS_URL value
-if (envs['REDIS_URL']) {
-  envs['REDIS_URL'] = envs[envs['REDIS_URL']]
-}
+//if (envs['REDIS_URL']) {
+//  envs['REDIS_URL'] = envs[envs['REDIS_URL']]
+//}
 
 module.exports = envs
