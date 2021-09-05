@@ -6,14 +6,14 @@ import { createRoom } from '../services';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
-export default function Home() {
+export default function Home(): JSX.Element {
 
   const history = useHistory();
 
   const [roomError, setRoomError] = useState(false);  
   const [openingRoom, setOpeningRoom] = useState(false);  
 
-  const openRoom = async () => {
+  async function openRoom(): Promise<void> {
     setOpeningRoom(true);
     setRoomError(false);
     try {

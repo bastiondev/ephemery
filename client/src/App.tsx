@@ -8,7 +8,7 @@ import {
 import { Home, NoMatch, Room } from './pages'
 import { Container } from './components'
 
-function App() {
+function App(): JSX.Element {
 
   return (
     <Container>

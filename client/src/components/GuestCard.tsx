@@ -9,9 +9,10 @@ import {
   faSafari, 
   faInternetExplorer 
 } from '@fortawesome/free-brands-svg-icons';
+import {IGuest} from '../model/IGuest';
 
-export default function GuestCard(props) {
-  
+export default function GuestCard(props: {guest: IGuest;}): JSX.Element {
+
   const guest = props.guest;
 
   let broserIcon = <span />;

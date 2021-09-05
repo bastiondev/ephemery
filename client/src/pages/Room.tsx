@@ -7,6 +7,13 @@ import { encryptText, decryptText } from '../services';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {IRoomMessage} from '../model/IRoomMessage';
+import {IGuest} from '../model/IGuest';
+import {IResponseMessage} from '../model/IResponseMessage';
+
+
+
+
 
 const proto = process.env['REACT_APP_ENVIRONMENT'] === 'development' ?
   'ws' : 'wss';
@@ -16,13 +23,13 @@ const wssLocation = `${proto}://${window.location.hostname}:${port}/room-io`;
 const KEEPALIVE_INTERVAL = 1000 * 10;
 const MAX_TEXT_SIZE = 1000;
 
-const send = (wss, message) => {
+function send(wss: WebSocket, message: IRoomMessage): void {
   wss.send(JSON.stringify(message));
 }
 
-export default function Room(props) {
+export default function Room(): JSX.Element {
   
-  const location = useLocation();
+  const location = useLocation<{roomToken: string}>();
 
   // Room details
   const roomId = location.pathname.split('/')[2];
@@ -36,41 +43,41 @@ export default function Room(props) {
   const [ isClosed, setIsClosed ] = useState(false);
   const [ showLinkCopied, setShowLinkCopied ] = useState(false);
   const [ showContentsCopied, setShowContentsCopied ] = useState(false);
-  const [ error, setError ] = useState(null);
+  const [ error, setError ] = useState<null | string>(null);
   const [ isDisconnected, setIsDisconnected ] = useState(false);
-  const [ guests, setGuests ] = useState([]);
+  const [ guests, setGuests ] = useState<IGuest[]>([]);
 
-  const wss = useRef(null);
-  const copyLinkRef = useRef(null);
+  const wss = useRef<WebSocket | null>(null);
+  const copyLinkRef = useRef<HTMLSpanElement | null>(null);
   const guestContentsRef = useRef(null);
 
   // Close room
-  const closeRoom = () => {
+  function closeRoom(): void {
     send(wss.current, {roomId, type: 'close-room'});
   }
 
   // Add/remove guests from the room
-  const addGuest = (guest) => {
+  function addGuest(guest: IGuest): void {
     if (!find(guests, {guestId: guest.guestId})) {
       setGuests(guests.concat([guest]));
     }
   }
-  const removeGuest = (guest) => {
+  function removeGuest(guest: IGuest): void {
     setGuests(filter(guests, ({guestId}) => guestId !== guest.guestId));
   }
 
   // Debounce sending text so we don't send on every character change
-  const sendText = async (text) => {
+  async function sendText(text: string): Promise<void> {
     send(wss.current, { 
       roomId, 
       type: 'send-room', 
       body: await encryptText(passphrase, text) 
     });
   }
-  const debouncedSendText = useCallback(debounce(sendText, 300), [])
+  const debouncedSendText = useCallback(debounce(sendText, 300), []);
 
-  const copyLink = (event) => {
-    var range = document.createRange();
+  function copyLink(event): void {
+    const range = document.createRange();
     range.selectNode(copyLinkRef.current);
     window.getSelection().addRange(range);
     document.execCommand('copy');
@@ -79,19 +86,19 @@ export default function Room(props) {
 
   // Copy guest contents from disabled text area
   // Need to briefly enable to copy
-  const copyGuestContents = (event) => {
-    var range = document.createRange();
+  function copyGuestContents(event): void {
+    const range = document.createRange();
     guestContentsRef.current.select();
     document.execCommand('copy');
     setShowContentsCopied(true);
   }
 
   // Set up the WSS connection and keepalive
-  useEffect(() => {
+  useEffect((): () => void => {
     wss.current = new WebSocket(wssLocation);   
 
     // Run initial keep-alive on open to keep room open
-    const keepalive = () => {
+    function keepalive(): void {
       if (wss.current.readyState === 3) {
         console.log("WSS is closed, trying to reconnect")
         setIsDisconnected(true)
@@ -140,39 +147,40 @@ export default function Room(props) {
   }, [showContentsCopied])
 
 
+
   // 
   // Host Web Socket Handler
   // 
-  const hostHandler = (wss) => {
+  function hostHandler(wssP: WebSocket): void {
 
-    wss.onmessage = async (message) => {
-      const {type, body} = JSON.parse(message.data);
+    wssP.onmessage = async (message) => {
+      const r: IResponseMessage = JSON.parse(message.data);
 
-      if (type === 'error') {
-        if (body === 'invalid-room-key')
+      if (r.type === 'error') {
+        if (r.body === 'invalid-room-key')
           setError("Unable to create room. It has expired or your key is invalid.")
         else
           setError("Unknown error in room")
 
-      } else if (type === 'guest-keepalive') {
+      } else if (r.type === 'guest-keepalive') {
         // Broadcast message again
         await sendText(text);
-        addGuest(body);
+        addGuest(r.body);
 
-      } else if (type === 'guest-disconnect') {
-        removeGuest(body);
+      } else if (r.type === 'guest-disconnect') {
+        removeGuest(r.body);
 
-      } else if (type === 'close-room') {
+      } else if (r.type === 'close-room') {
         setIsClosed(true);
 
       }
     }
 
-    wss.onerror = async (event) => {
+    wssP.onerror = async (event) => {
       console.log("onerror", event);
     }
 
-    wss.onclose = async (event) => {
+    wssP.onclose = async (event) => {
       setTimeout(() => {
         if (wss.current && wss.current.readyState !== 1) setIsDisconnected(true)
       }, 1000);
@@ -182,25 +190,25 @@ export default function Room(props) {
   // 
   // Guest Web Socket Handler
   // 
-  const guestHandler = (wss) => {
+  function guestHandler(wssP: WebSocket): void {
 
     // Respond to broadcast
-    wss.onmessage = async (message) => {
-      const {type, body} = JSON.parse(message.data);
-      if (type === 'send-room') {
+    wssP.onmessage = async (message) => {
+      const r: IResponseMessage = JSON.parse(message.data);
+      if (r.type === 'send-room') {
         setIsClosed(false);
-        setText(await decryptText(passphrase, body));
-      } else if (type === 'close-room') {
+        setText(await decryptText(passphrase, r.body));
+      } else if (r.type === 'close-room') {
         setIsClosed(true);
 
       }
     }
 
-    wss.onerror = async (event) => {
+    wssP.onerror = async (event) => {
       console.log("onerror", event);
     }
 
-    wss.onclose = async (event) => {
+    wssP.onclose = async (event) => {
       setTimeout(() => {
         if (wss.current && wss.current.readyState !== 1) setIsDisconnected(true)
       }, 1000);
@@ -239,7 +247,7 @@ export default function Room(props) {
              <div>
               <div>
                 <textarea className="form-control font-monospace" 
-                  rows="5" 
+                  rows={5}
                   onChange={(e) => {
                     if (e.target.value.length <= MAX_TEXT_SIZE) {
                       setText(e.target.value);
@@ -276,7 +284,7 @@ export default function Room(props) {
               <div className="my-3">
                 <textarea className="form-control font-monospace bg-white" 
                   ref={guestContentsRef}
-                  rows="5" 
+                  rows={5}
                   value={text}
                   readOnly={true}
                 />
