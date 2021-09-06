@@ -47,9 +47,9 @@ export default function Room(): JSX.Element {
   const [ isDisconnected, setIsDisconnected ] = useState(false);
   const [ guests, setGuests ] = useState<IGuest[]>([]);
 
-  const wss = useRef<WebSocket | null>(null);
-  const copyLinkRef = useRef<HTMLSpanElement | null>(null);
-  const guestContentsRef = useRef(null);
+  const wss = useRef<WebSocket>(null);
+  const copyLinkRef = useRef<HTMLSpanElement>(null);
+  const guestContentsRef = useRef<HTMLTextAreaElement>(null);
 
   // Close room
   function closeRoom(): void {
