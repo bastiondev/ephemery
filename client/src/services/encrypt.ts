@@ -1,15 +1,15 @@
 // Symmetric passphrase encryption by:
 // https://bradyjoslin.com/blog/encryption-webcrypto/
 
-const buff_to_base64 = (buff) => {
+function buff_to_base64(buff: Uint8Array): string {
   return btoa(String.fromCharCode.apply(null, buff));
 }
 
-const base64_to_buf = (b64) => {
+function base64_to_buf(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(null));
 }
 
-const getPasswordKey = (passphrase) => {
+function getPasswordKey(passphrase: string): Promise<CryptoKey> {
   return window.crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(passphrase),
@@ -19,7 +19,7 @@ const getPasswordKey = (passphrase) => {
   );
 }
 
-const deriveKey = (passwordKey, salt, keyUsage) => {
+function deriveKey(passwordKey: CryptoKey, salt: Uint8Array, keyUsage: KeyUsage[]): Promise<CryptoKey> {
   return window.crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
@@ -34,7 +34,7 @@ const deriveKey = (passwordKey, salt, keyUsage) => {
   );
 }
 
-export async function encryptText(passphrase, text) {
+export async function encryptText(passphrase: string, text: string): Promise<string> {
   const salt = window.crypto.getRandomValues(new Uint8Array(16));
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
   const passwordKey = await getPasswordKey(passphrase);
@@ -59,7 +59,7 @@ export async function encryptText(passphrase, text) {
   return base64Buff;
 }
 
-export async function decryptText(passphrase, encryptedText) {
+export async function decryptText(passphrase: string, encryptedText: string): Promise<string> {
   const encryptedDataBuff = base64_to_buf(encryptedText);
   const salt = encryptedDataBuff.slice(0, 16);
   const iv = encryptedDataBuff.slice(16, 16 + 12);

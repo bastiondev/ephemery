@@ -1,8 +1,8 @@
-import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
+import React from 'react';
 
-export default function Container(props) {
+export default function Container(props: {children: React.ReactNode}): JSX.Element {
   return (
     <div style={{maxWidth: '1000px'}} 
         className="container pt-lg-6 pt-4 d-flex flex-column h-100">
