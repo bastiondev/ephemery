@@ -219,8 +219,7 @@ export default function Room(props) {
           <div className="RoomContents p-4">
             <div className="text-center">
               <div className="RoomLink overflow-auto border rounded-1 bg-body  d-inline-block" style={{maxWidth: '100%'}}>
-                <span ref={copyLinkRef} 
-                    onClick={copyLink}
+                <span onClick={copyLink}
                     className="RoomLinkCopy mx-auto fs-md-5 px-4 py-3 d-inline-block">
                   <FontAwesomeIcon icon={faCopy} className="RoomCopyIcon mx-2" />
                   <span ref={copyLinkRef}>

@@ -93,6 +93,52 @@ Guest disconnected:
 ```
 
 
+## Signaling server
+
+### Messages
+
+*hostKeepalive* - Sent by the host of the room to keep the room open.  Resets the TTL on the roomId:roomToken
+
+```json
+{
+  "type": "hostKeepalive",
+  "roomId": "<roomId>",
+  "roomToken": "<roomToken>",
+}
+```
+
+*hostSendMessage* - Sent by the host of the room to send a message to a specific guest
+
+```json
+{
+  "type": "hostSendMessage",
+  "roomId": "<roomId>",
+  "roomToken": "<roomToken>",
+  "guestId": "<targetGuestId>",
+  "message": "<messageContent>"
+}
+```
+
+*guestKeepalive* - Send by a guest of the room to send id and profile information to the host.  Makes the host send the message to the guest again.
+
+```json
+{
+  "type": "guestKeepalive",
+  "roomId": "<roomId>"
+}
+```
+
+The server then adds details to the *guestKeepalive* from the User Agent and IP address details, resulting in the following getting forwarded to the host:
+
+```json
+{
+  "type": "guestKeepalive",
+  "roomId": "<roomId>"
+}
+```
+
+
+
 
 
 
